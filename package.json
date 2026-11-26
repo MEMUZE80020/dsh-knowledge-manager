@@ -17,7 +17,8 @@
     "src",
     "locale/*.json",
     "docs",
-    "icon.svg"
+    "icon.svg",
+    "LICENSE"
   ],
   "dsh": {
     "bundle": {
