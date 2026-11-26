@@ -1,6 +1,6 @@
 {
   "name": "dsh-knowledge-manager",
-  "version": "0.3.0.1",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "DSH knowledge manager: SQLite local knowledge base with optional MariaDB/MySQL external libraries.",
