@@ -29,6 +29,13 @@ github:MEMUZE80020/dsh-knowledge-manager
 
 重启 DSH 后，侧栏出现「知识管理」，同时注册 `kb_search` / `kb_record` / `kb_catalog` 等工具。
 
+## 手动安装（ZIP）
+
+1. 下载 [dsh-knowledge-manager-0.3.1.zip](https://github.com/MEMUZE80020/dsh-knowledge-manager/releases/download/v0.3.1/dsh-knowledge-manager-0.3.1.zip)
+2. 解压到任意目录（无需构建）
+3. DSH「插件 → 添加插件」选择解压目录；或 `dsh plugin --profile web add <解压目录绝对路径>`
+4. 重启 DSH 生效
+
 ## 主要能力
 
 - 本地 SQLite 知识库（默认库 `dsh-main`），中文子串检索（FTS5 trigram）
