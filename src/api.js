@@ -185,7 +185,7 @@ export function createApiHandler(getStore, options = {}) {
           try {
             const resp = await fetch('https://git.zr97.top/api/v1/repos/1024/dsh-knowledge-manager/releases/latest', { headers: { accept: 'application/json' } })
             const data = await resp.json()
-            return json(res, 200, { latest: String(data.tag_name || ''), url: String(data.html_url || ''), name: String(data.name || '') })
+            return json(res, 200, { latest: String(data.tag_name || ''), url: String(data.html_url || ''), name: String(data.name || ''), body: String(data.body || '') })
           } catch (error) {
             return json(res, 200, { latest: '', error: String(error?.message ?? error) })
           }
@@ -349,7 +349,7 @@ export function createApiHandler(getStore, options = {}) {
           try {
             const resp = await fetch('https://git.zr97.top/api/v1/repos/1024/dsh-knowledge-manager/releases/latest', { headers: { accept: 'application/json' } })
             const data = await resp.json()
-            return json(res, 200, { latest: String(data.tag_name || ''), url: String(data.html_url || ''), name: String(data.name || '') })
+            return json(res, 200, { latest: String(data.tag_name || ''), url: String(data.html_url || ''), name: String(data.name || ''), body: String(data.body || '') })
           } catch (error) {
             return json(res, 200, { latest: '', error: String(error?.message ?? error) })
           }

@@ -6,10 +6,34 @@ window.__ModuleLoader__.load({
     const { useState, useEffect, useCallback, useRef } = React
 
     const PANEL_ID = 'dsh-knowledge-manager'
-    const KB_VERSION = '0.2.48'
+    const KB_VERSION = '0.2.49'
     const API = `${(typeof window !== 'undefined' && window.__KB_API_BASE__) || ''}/kb-api`
 
     let pendingSection = ''
+    let cachedUpdate = null
+    let updateTimer = null
+    function checkUpdateGlobal(force) {
+      if (!force && cachedUpdate && Date.now() - cachedUpdate.at < 10 * 60 * 1000) return Promise.resolve(cachedUpdate)
+      return fetch(`${API}/update-check`)
+        .then((r) => r.json())
+        .then((data) => {
+          const latest = String(data?.latest || '')
+          const hasNew = latest ? cmpVersion(latest, KB_VERSION) > 0 : false
+          cachedUpdate = { at: Date.now(), latest, url: data?.url || '', body: data?.body || '', hasNew }
+          try {
+            window.dispatchEvent(new CustomEvent('kb-update', { detail: cachedUpdate }))
+          } catch {
+            /* ignore */
+          }
+          return cachedUpdate
+        })
+        .catch(() => null)
+    }
+    function startUpdateWatcher() {
+      checkUpdateGlobal(false)
+      if (updateTimer) clearInterval(updateTimer)
+      updateTimer = setInterval(() => checkUpdateGlobal(true), 10 * 60 * 1000)
+    }
     let pendingFlashId = ''
     function flashEntryRow(id) {
       try {
@@ -1559,21 +1583,15 @@ window.__ModuleLoader__.load({
 
     function KnowledgePage() {
       const [active, setActive] = useState(pendingSection || 'entries')
-      const [update, setUpdate] = useState(null)
-      const checkUpdate = useCallback(async () => {
-        try {
-          const data = await api('update-check')
-          const latest = String(data?.latest || '')
-          setUpdate({ latest, url: data?.url || '', hasNew: latest ? cmpVersion(latest, KB_VERSION) > 0 : false })
-        } catch {
-          /* ignore */
-        }
-      }, [])
+      const [update, setUpdate] = useState(cachedUpdate)
+      const [updateOpen, setUpdateOpen] = useState(false)
       useEffect(() => {
-        checkUpdate()
-        const timer = setInterval(checkUpdate, 10 * 60 * 1000)
-        return () => clearInterval(timer)
-      }, [checkUpdate])
+        const onUpdate = (event) => setUpdate(event.detail)
+        window.addEventListener('kb-update', onUpdate)
+        if (cachedUpdate) setUpdate(cachedUpdate)
+        return () => window.removeEventListener('kb-update', onUpdate)
+      }, [])
+      const checkUpdate = () => checkUpdateGlobal(true)
       const [detail, setDetail] = useState(null)
       const [flashId, setFlashId] = useState(pendingFlashId || '')
       useEffect(() => {
@@ -1618,12 +1636,24 @@ window.__ModuleLoader__.load({
           h(
             'div',
             {
-              style: { fontSize: 15, fontWeight: 600, padding: '0 8px 4px', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' },
-              title: update?.latest ? `最新版本 ${update.latest}，点击检查更新` : '点击检查更新',
-              onClick: checkUpdate,
+              style: { fontSize: 15, fontWeight: 600, padding: '0 8px 4px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' },
+              title: update?.hasNew ? `发现新版本 ${update.latest}，点击查看` : '点击检查更新',
+              onClick: () => {
+                if (update?.hasNew) setUpdateOpen(true)
+                else checkUpdate()
+              },
             },
-            update?.hasNew ? h('span', { style: { width: 8, height: 8, borderRadius: '50%', background: '#e74c3c', display: 'inline-block' } }) : null,
-            `知识管理 v${KB_VERSION}`,
+            h('span', null, `知识管理 v${KB_VERSION}`),
+            update?.hasNew
+              ? h(
+                  'span',
+                  {
+                    className: 'kb-update-badge',
+                    style: { background: '#c0392b', color: '#fff', borderRadius: 6, padding: '0 7px', fontSize: 11, fontWeight: 600, lineHeight: '18px', display: 'inline-block' },
+                  },
+                  '更新',
+                )
+              : null,
           ),
           ...NAV.map((group) =>
             h(
@@ -1650,6 +1680,25 @@ window.__ModuleLoader__.load({
           ),
         ),
         h('div', { style: content }, body),
+        updateOpen
+          ? h(
+              'div',
+              { style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 } },
+              h(
+                'div',
+                { style: { background: 'Canvas', color: 'CanvasText', borderRadius: 12, padding: '16px 18px', width: 560, maxWidth: '92vw', maxHeight: '80vh', overflow: 'auto', border: hair, boxShadow: '0 12px 40px rgba(0,0,0,.3)', display: 'flex', flexDirection: 'column', gap: 10 } },
+                h('div', { style: { fontWeight: 600, fontSize: 15 } }, `发现新版本 ${update?.latest || ''}`),
+                h('div', { style: { fontSize: 12, opacity: 0.7 } }, `当前版本 v${KB_VERSION}`),
+                update?.body ? h(MarkdownView, { text: update.body }) : h('div', { style: muted }, '该版本没有填写更新说明。'),
+                h(
+                  'div',
+                  { style: { display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 } },
+                  h('a', { href: update?.url || '#', target: '_blank', rel: 'noreferrer', style: { ...btn, textDecoration: 'none', color: 'inherit' } }, '打开发布页'),
+                  h('button', { style: btnPrimary, onClick: () => setUpdateOpen(false) }, '关闭'),
+                ),
+              ),
+            )
+          : null,
       )
     }
 
@@ -1669,7 +1718,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    const FLASH_CSS = `@keyframes kb-flash { 0%,100% { background: transparent } 50% { background: rgba(244,185,66,.45) } } .kb-flash { animation: kb-flash .5s ease-in-out 4 } .kb-pop-item:hover { box-shadow: 0 2px 10px rgba(0,0,0,.22); background: color-mix(in srgb, currentColor 7%, transparent) }`
+    const FLASH_CSS = `@keyframes kb-flash { 0%,100% { background: transparent } 50% { background: rgba(244,185,66,.45) } } .kb-flash { animation: kb-flash .5s ease-in-out 4 } @keyframes kb-update-badge { 0%,100% { transform: scale(1) rotate(0deg) } 25% { transform: scale(1.06) rotate(-2deg) } 75% { transform: scale(1.06) rotate(2deg) } } .kb-update-badge { animation: kb-update-badge 1.1s ease-in-out infinite; transform-origin: center } .kb-pop-item:hover { box-shadow: 0 2px 10px rgba(0,0,0,.22); background: color-mix(in srgb, currentColor 7%, transparent) }`
     function ensureFlashStyle() {
       if (typeof document === 'undefined') return
       if (document.getElementById('kb-flash-style')) return
@@ -1683,6 +1732,11 @@ window.__ModuleLoader__.load({
       inject: ['slots', 'sidebarRightTabs', 'sidebarRight'],
       apply(ctx) {
         ensureFlashStyle()
+        try {
+          startUpdateWatcher()
+        } catch {
+          /* ignore */
+        }
         try {
           ctx.slots.inject('sidebar.panellist', () =>
             ctx.slots.register({ name: 'sidebar.panellist', id: PANEL_ID, order: 10, label: () => '知识管理' }, SidebarIcon),
