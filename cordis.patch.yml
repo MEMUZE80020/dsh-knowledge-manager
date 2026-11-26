@@ -1,0 +1,6 @@
+- insert:
+    - id: dsh-knowledge-manager
+      name: dsh-knowledge-manager
+      config:
+        tools: true
+        prompt: true

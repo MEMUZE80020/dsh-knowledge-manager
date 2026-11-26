@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "知识管理",
+    "description": "本地知识库，可连接外部知识库、双向同步与备份，并让 Agent 按轮次记录与检索知识。",
+    "detail": "docs/DETAIL.md"
+  }
+}

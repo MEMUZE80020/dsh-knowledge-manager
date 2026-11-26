@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Knowledge manager",
+    "description": "Local knowledge base with optional external knowledge-base connections, two-way sync, backup and agent-recalled knowledge.",
+    "detail": "docs/DETAIL.md"
+  }
+}
