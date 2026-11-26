@@ -1,6 +1,6 @@
 {
   "name": "dsh-knowledge-manager",
-  "version": "0.2.52",
+  "version": "0.2.53",
   "private": true,
   "type": "module",
   "description": "DSH knowledge manager: SQLite local knowledge base with optional MariaDB/MySQL external libraries.",
@@ -40,7 +40,7 @@
   "homepage": "https://space.bilibili.com/41158746",
   "repository": {
     "type": "git",
-    "url": "https://space.bilibili.com/41158746"
+    "url": "https://github.com/MEMUZE80020/dsh-knowledge-manager"
   },
   "bugs": {
     "url": "https://space.bilibili.com/41158746"

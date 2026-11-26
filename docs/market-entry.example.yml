@@ -1,5 +1,5 @@
-url: https://github.com/OWNER/dsh-knowledge-manager
-name: OWNER/dsh-knowledge-manager
+url: https://github.com/MEMUZE80020/dsh-knowledge-manager
+name: MEMUZE80020/dsh-knowledge-manager
 category: memory
 description:
   en: Local SQLite knowledge base with optional MariaDB/MySQL libraries, turn-by-turn knowledge cards, sensitivity classification and two-way sync for DeepSeek Harness.

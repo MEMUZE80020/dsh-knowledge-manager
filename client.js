@@ -1587,6 +1587,7 @@ window.__ModuleLoader__.load({
       const [updateOpen, setUpdateOpen] = useState(false)
       const [updateBusy, setUpdateBusy] = useState(false)
       const [updateMsg, setUpdateMsg] = useState('')
+      const [updateReady, setUpdateReady] = useState(false)
       useEffect(() => {
         const onUpdate = (event) => setUpdate(event.detail)
         window.addEventListener('kb-update', onUpdate)
@@ -1682,6 +1683,14 @@ window.__ModuleLoader__.load({
             ),
           ),
         ),
+        updateReady
+          ? h(
+              'div',
+              { style: { margin: '0 12px 8px', padding: '10px 12px', borderRadius: 8, background: '#c0392b', color: '#fff', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 } },
+              h('span', null, `更新已下载（${update?.latest || ''}），请重启 DSH 后生效`),
+              h('button', { style: { ...btn, background: '#fff', color: '#c0392b' }, onClick: () => setUpdateReady(false) }, '知道了'),
+            )
+          : null,
         h('div', { style: content }, body),
         updateOpen
           ? h(
@@ -1705,6 +1714,7 @@ window.__ModuleLoader__.load({
                       try {
                         const res = await api('self-update')
                         setUpdateMsg(res?.ok ? '更新已下载，请重启 DSH 生效' : `更新失败：${res?.error || '未知错误'}`)
+                        if (res?.ok) setUpdateReady(true)
                       } catch (e) {
                         setUpdateMsg(`更新失败：${e?.message || e}`)
                       } finally {

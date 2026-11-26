@@ -185,36 +185,53 @@ export function createApiHandler(getStore, options = {}) {
           }
           return json(res, 200, { sessionId, groups })
         }
-        if (path === 'update-check') {
-          try {
-            const resp = await fetch('https://registry.npmjs.org/dsh-knowledge-manager/latest', { headers: { accept: 'application/json' } })
-            const data = await resp.json()
-            return json(res, 200, {
-              latest: String(data.version || ''),
-              url: 'https://www.npmjs.com/package/dsh-knowledge-manager',
-              name: 'npm',
-              body: String(data.description || ''),
-            })
-          } catch (error) {
-            return json(res, 200, { latest: '', error: String(error?.message ?? error) })
+        if (path === 'update-check' || path === 'self-update') {
+          const REPO = 'MEMUZE80020/dsh-knowledge-manager'
+          const API_MIRRORS = ['https://api.github.com', 'https://api.kkgithub.com']
+          const DL_MIRRORS = ['', 'https://gh-proxy.com/', 'https://ghfast.top/', 'https://ghproxy.net/', 'https://hub.gitmirror.com/']
+          const getJson = async (url) => {
+            const resp = await fetch(url, { headers: { accept: 'application/vnd.github+json', 'user-agent': 'dsh-knowledge-manager' } })
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+            return resp.json()
           }
-        }
-        if (path === 'self-update') {
+          let rel = null
+          for (const base of API_MIRRORS) {
+            try {
+              rel = await getJson(`${base}/repos/${REPO}/releases/latest`)
+              break
+            } catch {
+              /* next mirror */
+            }
+          }
+          if (!rel) return json(res, 200, path === 'update-check' ? { latest: '', error: '无法访问 GitHub' } : { ok: false, error: '无法访问 GitHub' })
+          const latest = String(rel.tag_name || '')
+          if (path === 'update-check') {
+            return json(res, 200, { latest, url: String(rel.html_url || ''), name: String(rel.name || ''), body: String(rel.body || '') })
+          }
           const root = dirname(dirname(fileURLToPath(import.meta.url)))
+          const tarballPath = `https://github.com/${REPO}/archive/refs/tags/${latest}.tar.gz`
           try {
-            const meta = await (await fetch('https://registry.npmjs.org/dsh-knowledge-manager/latest', { headers: { accept: 'application/json' } })).json()
-            const tarball = String(meta?.dist?.tarball || '')
-            if (!tarball) return json(res, 200, { ok: false, error: 'npm 上没有找到包' })
-            const buf = Buffer.from(await (await fetch(tarball)).arrayBuffer())
+            let buf = null
+            for (const prefix of DL_MIRRORS) {
+              try {
+                const resp = await fetch(prefix + tarballPath)
+                if (!resp.ok) continue
+                buf = Buffer.from(await resp.arrayBuffer())
+                break
+              } catch {
+                /* next mirror */
+              }
+            }
+            if (!buf) return json(res, 200, { ok: false, error: '下载更新包失败' })
             const tmp = mkdtempSync(join(tmpdir(), 'kb-upd-'))
-            const tgz = join(tmp, 'pkg.tgz')
+            const tgz = join(tmp, 'pkg.tar.gz')
             writeFileSync(tgz, buf)
-            const out = join(tmp, 'x')
             execFileSync('tar', ['-xzf', tgz, '-C', tmp], { windowsHide: true })
-            const base = join(tmp, 'package')
+            const dir = readdirSync(tmp).find((n) => n.startsWith('dsh-knowledge-manager-') && n !== 'pkg.tar.gz')
+            const base = dir ? join(tmp, dir) : tmp
             for (const name of readdirSync(base)) cpSync(join(base, name), join(root, name), { recursive: true, force: true })
             rmSync(tmp, { recursive: true, force: true })
-            return json(res, 200, { ok: true, needsRestart: true, version: String(meta.version || '') })
+            return json(res, 200, { ok: true, needsRestart: true, version: latest })
           } catch (error) {
             return json(res, 200, { ok: false, error: String(error?.message ?? error) })
           }

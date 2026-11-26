@@ -8,9 +8,11 @@ DSH（DeepSeek Harness）知识管理插件：SQLite 本地知识库（默认）
 ## 安装
 
 ```bash
-npm install dsh-knowledge-manager
-# 或在 DSH 插件管理里添加包名 dsh-knowledge-manager
+dsh plugin --profile web add github:MEMUZE80020/dsh-knowledge-manager
+# 或在 DSH 插件管理里添加插件，填 github:MEMUZE80020/dsh-knowledge-manager
 ```
+
+- GitHub：https://github.com/MEMUZE80020/dsh-knowledge-manager
 
 安装后重启 DSH，侧栏出现「知识管理」，并注册 `kb_search` / `kb_record` / `kb_catalog` / `kb_create_library` / `kb_create_table` 工具与知识库提示词。
 
@@ -22,7 +24,8 @@ npm install dsh-knowledge-manager
 - 启动备份、本地即时推送、云端轮询、手动同步（含“无需同步”反馈）
 - 设置页全局配置，一键清除全部数据（10 秒二次确认）
 - 敏感条目推送云端时按删除（tombstone）处理
-- 版本号后「更新」徽章；更新检查使用 npm 官方 registry，更新包也来自 npm
+- 版本号后「更新」徽章；更新检查与自动更新走 GitHub Releases（内置国内加速通道）
+- 更新下载完成后顶部显示醒目提示，需重启 DSH 生效
 
 ## 数据位置
 
