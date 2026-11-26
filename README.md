@@ -4,7 +4,7 @@
 
 装上它，你不需要再手动整理笔记：DSH 每轮回答前会查本地知识库，回答完把值得留下的东西记下来；敏感内容会被标红、默认不外传。
 
-![条目管理](https://raw.githubusercontent.com/MEMUZE80020/dsh-knowledge-manager/main/docs/screenshots/entries.png)
+![条目管理](docs/screenshots/entries.png)
 
 ## 装好之后，你会得到什么
 
@@ -13,7 +13,7 @@
 - **敏感内容有护栏**：密码、token、合同、客户名单这类内容自动标红/标黄，默认不推送云端，避免误发。
 - **对话里能看见“这轮学到了什么”**：每轮结束后的知识卡片显示新增/更新/引用了哪些条目，点一下就能跳转定位。
 
-![对话中的本轮知识卡片](https://raw.githubusercontent.com/MEMUZE80020/dsh-knowledge-manager/main/docs/screenshots/turn-card.png)
+![对话中的本轮知识卡片](docs/screenshots/turn-card.png)
 
 ## 安装
 
