@@ -181,6 +181,15 @@ export function createApiHandler(getStore, options = {}) {
           }
           return json(res, 200, { sessionId, groups })
         }
+        if (path === 'update-check') {
+          try {
+            const resp = await fetch('https://git.zr97.top/api/v1/repos/1024/dsh-knowledge-manager/releases/latest', { headers: { accept: 'application/json' } })
+            const data = await resp.json()
+            return json(res, 200, { latest: String(data.tag_name || ''), url: String(data.html_url || ''), name: String(data.name || '') })
+          } catch (error) {
+            return json(res, 200, { latest: '', error: String(error?.message ?? error) })
+          }
+        }
         if (path === 'recent-updated') {
           const since = q.get('since') || new Date(new Date().setHours(0, 0, 0, 0)).toISOString()
           const ids = []
@@ -335,6 +344,15 @@ export function createApiHandler(getStore, options = {}) {
           store.meta.prepare('DELETE FROM kb_attrib').run()
           try { store.meta.prepare('DELETE FROM kb_undo').run() } catch { /* optional */ }
           return json(res, 200, { ok: true, cleared: Number(turns.changes || 0) })
+        }
+        if (path === 'update-check') {
+          try {
+            const resp = await fetch('https://git.zr97.top/api/v1/repos/1024/dsh-knowledge-manager/releases/latest', { headers: { accept: 'application/json' } })
+            const data = await resp.json()
+            return json(res, 200, { latest: String(data.tag_name || ''), url: String(data.html_url || ''), name: String(data.name || '') })
+          } catch (error) {
+            return json(res, 200, { latest: '', error: String(error?.message ?? error) })
+          }
         }
         if (path === 'recent-updated') {
           const since = q.get('since') || new Date(new Date().setHours(0, 0, 0, 0)).toISOString()

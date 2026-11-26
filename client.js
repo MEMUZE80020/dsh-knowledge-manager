@@ -6,7 +6,7 @@ window.__ModuleLoader__.load({
     const { useState, useEffect, useCallback, useRef } = React
 
     const PANEL_ID = 'dsh-knowledge-manager'
-    const KB_VERSION = '0.2.47'
+    const KB_VERSION = '0.2.48'
     const API = `${(typeof window !== 'undefined' && window.__KB_API_BASE__) || ''}/kb-api`
 
     let pendingSection = ''
@@ -1547,8 +1547,33 @@ window.__ModuleLoader__.load({
     }
 
     // ---------------------------------------------------------------- shell
+    function cmpVersion(a, b) {
+      const pa = String(a || '').replace(/^v/, '').split('.').map((n) => Number(n) || 0)
+      const pb = String(b || '').replace(/^v/, '').split('.').map((n) => Number(n) || 0)
+      for (let i = 0; i < Math.max(pa.length, pb.length); i += 1) {
+        const d = (pa[i] || 0) - (pb[i] || 0)
+        if (d !== 0) return d > 0 ? 1 : -1
+      }
+      return 0
+    }
+
     function KnowledgePage() {
       const [active, setActive] = useState(pendingSection || 'entries')
+      const [update, setUpdate] = useState(null)
+      const checkUpdate = useCallback(async () => {
+        try {
+          const data = await api('update-check')
+          const latest = String(data?.latest || '')
+          setUpdate({ latest, url: data?.url || '', hasNew: latest ? cmpVersion(latest, KB_VERSION) > 0 : false })
+        } catch {
+          /* ignore */
+        }
+      }, [])
+      useEffect(() => {
+        checkUpdate()
+        const timer = setInterval(checkUpdate, 10 * 60 * 1000)
+        return () => clearInterval(timer)
+      }, [checkUpdate])
       const [detail, setDetail] = useState(null)
       const [flashId, setFlashId] = useState(pendingFlashId || '')
       useEffect(() => {
@@ -1590,7 +1615,16 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { style: nav },
-          h('div', { style: { fontSize: 15, fontWeight: 600, padding: '0 8px 4px' } }, `知识管理 v${KB_VERSION}`),
+          h(
+            'div',
+            {
+              style: { fontSize: 15, fontWeight: 600, padding: '0 8px 4px', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' },
+              title: update?.latest ? `最新版本 ${update.latest}，点击检查更新` : '点击检查更新',
+              onClick: checkUpdate,
+            },
+            update?.hasNew ? h('span', { style: { width: 8, height: 8, borderRadius: '50%', background: '#e74c3c', display: 'inline-block' } }) : null,
+            `知识管理 v${KB_VERSION}`,
+          ),
           ...NAV.map((group) =>
             h(
               'div',
