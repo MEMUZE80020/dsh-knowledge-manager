@@ -1,4 +1,8 @@
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, cpSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 import { createMysqlRemote } from './core/remote.js'
 import { syncAllLibraries } from './core/sync-all.js'
@@ -181,6 +185,29 @@ export function createApiHandler(getStore, options = {}) {
           }
           return json(res, 200, { sessionId, groups })
         }
+        if (path === 'self-update') {
+          const root = dirname(dirname(fileURLToPath(import.meta.url)))
+          try {
+            const rel = await (await fetch('https://git.zr97.top/api/v1/repos/1024/dsh-knowledge-manager/releases/latest', { headers: { accept: 'application/json' } })).json()
+            const asset = (rel.assets || []).find((a) => /\.zip$/i.test(a.name) && a.browser_download_url)
+            if (!asset) return json(res, 200, { ok: false, error: '该 Release 没有附带 zip 包' })
+            const buf = Buffer.from(await (await fetch(asset.browser_download_url)).arrayBuffer())
+            const tmp = mkdtempSync(join(tmpdir(), 'kb-upd-'))
+            const zip = join(tmp, 'pkg.zip')
+            writeFileSync(zip, buf)
+            const out = join(tmp, 'x')
+            execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -Force -LiteralPath '${zip}' -DestinationPath '${out}'`], { windowsHide: true })
+            const entries = readdirSync(out)
+            const base = entries.length === 1 && readdirSync(join(out, entries[0])).length ? join(out, entries[0]) : out
+            for (const name of readdirSync(base)) {
+              cpSync(join(base, name), join(root, name), { recursive: true, force: true })
+            }
+            rmSync(tmp, { recursive: true, force: true })
+            return json(res, 200, { ok: true, needsRestart: true, version: String(rel.tag_name || '') })
+          } catch (error) {
+            return json(res, 200, { ok: false, error: String(error?.message ?? error) })
+          }
+        }
         if (path === 'update-check') {
           try {
             const resp = await fetch('https://git.zr97.top/api/v1/repos/1024/dsh-knowledge-manager/releases/latest', { headers: { accept: 'application/json' } })
@@ -344,6 +371,29 @@ export function createApiHandler(getStore, options = {}) {
           store.meta.prepare('DELETE FROM kb_attrib').run()
           try { store.meta.prepare('DELETE FROM kb_undo').run() } catch { /* optional */ }
           return json(res, 200, { ok: true, cleared: Number(turns.changes || 0) })
+        }
+        if (path === 'self-update') {
+          const root = dirname(dirname(fileURLToPath(import.meta.url)))
+          try {
+            const rel = await (await fetch('https://git.zr97.top/api/v1/repos/1024/dsh-knowledge-manager/releases/latest', { headers: { accept: 'application/json' } })).json()
+            const asset = (rel.assets || []).find((a) => /\.zip$/i.test(a.name) && a.browser_download_url)
+            if (!asset) return json(res, 200, { ok: false, error: '该 Release 没有附带 zip 包' })
+            const buf = Buffer.from(await (await fetch(asset.browser_download_url)).arrayBuffer())
+            const tmp = mkdtempSync(join(tmpdir(), 'kb-upd-'))
+            const zip = join(tmp, 'pkg.zip')
+            writeFileSync(zip, buf)
+            const out = join(tmp, 'x')
+            execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -Force -LiteralPath '${zip}' -DestinationPath '${out}'`], { windowsHide: true })
+            const entries = readdirSync(out)
+            const base = entries.length === 1 && readdirSync(join(out, entries[0])).length ? join(out, entries[0]) : out
+            for (const name of readdirSync(base)) {
+              cpSync(join(base, name), join(root, name), { recursive: true, force: true })
+            }
+            rmSync(tmp, { recursive: true, force: true })
+            return json(res, 200, { ok: true, needsRestart: true, version: String(rel.tag_name || '') })
+          } catch (error) {
+            return json(res, 200, { ok: false, error: String(error?.message ?? error) })
+          }
         }
         if (path === 'update-check') {
           try {

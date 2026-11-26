@@ -1,6 +1,6 @@
 {
   "name": "dsh-knowledge-manager",
-  "version": "0.2.50",
+  "version": "0.2.51",
   "private": true,
   "type": "module",
   "description": "知识管理：本地知识库、外部知识库连接与双向同步",

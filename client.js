@@ -6,7 +6,7 @@ window.__ModuleLoader__.load({
     const { useState, useEffect, useCallback, useRef } = React
 
     const PANEL_ID = 'dsh-knowledge-manager'
-    const KB_VERSION = '0.2.50'
+    const KB_VERSION = '0.2.51'
     const API = `${(typeof window !== 'undefined' && window.__KB_API_BASE__) || ''}/kb-api`
 
     let pendingSection = ''
@@ -1585,6 +1585,8 @@ window.__ModuleLoader__.load({
       const [active, setActive] = useState(pendingSection || 'entries')
       const [update, setUpdate] = useState(cachedUpdate)
       const [updateOpen, setUpdateOpen] = useState(false)
+      const [updateBusy, setUpdateBusy] = useState(false)
+      const [updateMsg, setUpdateMsg] = useState('')
       useEffect(() => {
         const onUpdate = (event) => setUpdate(event.detail)
         window.addEventListener('kb-update', onUpdate)
@@ -1691,11 +1693,27 @@ window.__ModuleLoader__.load({
                 h('div', { style: { fontWeight: 600, fontSize: 15 } }, `发现新版本 ${update?.latest || ''}`),
                 h('div', { style: { fontSize: 12, opacity: 0.7 } }, `当前版本 v${KB_VERSION}`),
                 update?.body ? h(MarkdownView, { text: update.body }) : h('div', { style: muted }, '该版本没有填写更新说明。'),
+                updateMsg ? h('div', { style: { ...muted, color: updateMsg.startsWith('更新已') ? '#2e9a6a' : '#c0392b' } }, updateMsg) : null,
                 h(
                   'div',
                   { style: { display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 } },
                   h('a', { href: update?.url || '#', target: '_blank', rel: 'noreferrer', style: { ...btn, textDecoration: 'none', color: 'inherit' } }, '打开发布页'),
-                  h('button', { style: btnPrimary, onClick: () => setUpdateOpen(false) }, '关闭'),
+                  h('button', {
+                    style: btnPrimary,
+                    onClick: async () => {
+                      setUpdateBusy(true)
+                      try {
+                        const res = await api('self-update')
+                        setUpdateMsg(res?.ok ? '更新已下载，请重启 DSH 生效' : `更新失败：${res?.error || '未知错误'}`)
+                      } catch (e) {
+                        setUpdateMsg(`更新失败：${e?.message || e}`)
+                      } finally {
+                        setUpdateBusy(false)
+                      }
+                    },
+                    disabled: updateBusy,
+                  }, updateBusy ? '更新中…' : '立即更新'),
+                  h('button', { style: btn, onClick: () => setUpdateOpen(false) }, '关闭'),
                 ),
               ),
             )
