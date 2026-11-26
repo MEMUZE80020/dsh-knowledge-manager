@@ -185,36 +185,38 @@ export function createApiHandler(getStore, options = {}) {
           }
           return json(res, 200, { sessionId, groups })
         }
+        if (path === 'update-check') {
+          try {
+            const resp = await fetch('https://registry.npmjs.org/dsh-knowledge-manager/latest', { headers: { accept: 'application/json' } })
+            const data = await resp.json()
+            return json(res, 200, {
+              latest: String(data.version || ''),
+              url: 'https://www.npmjs.com/package/dsh-knowledge-manager',
+              name: 'npm',
+              body: String(data.description || ''),
+            })
+          } catch (error) {
+            return json(res, 200, { latest: '', error: String(error?.message ?? error) })
+          }
+        }
         if (path === 'self-update') {
           const root = dirname(dirname(fileURLToPath(import.meta.url)))
           try {
-            const rel = await (await fetch('https://git.zr97.top/api/v1/repos/1024/dsh-knowledge-manager/releases/latest', { headers: { accept: 'application/json' } })).json()
-            const asset = (rel.assets || []).find((a) => /\.zip$/i.test(a.name) && a.browser_download_url)
-            if (!asset) return json(res, 200, { ok: false, error: '该 Release 没有附带 zip 包' })
-            const buf = Buffer.from(await (await fetch(asset.browser_download_url)).arrayBuffer())
+            const meta = await (await fetch('https://registry.npmjs.org/dsh-knowledge-manager/latest', { headers: { accept: 'application/json' } })).json()
+            const tarball = String(meta?.dist?.tarball || '')
+            if (!tarball) return json(res, 200, { ok: false, error: 'npm 上没有找到包' })
+            const buf = Buffer.from(await (await fetch(tarball)).arrayBuffer())
             const tmp = mkdtempSync(join(tmpdir(), 'kb-upd-'))
-            const zip = join(tmp, 'pkg.zip')
-            writeFileSync(zip, buf)
+            const tgz = join(tmp, 'pkg.tgz')
+            writeFileSync(tgz, buf)
             const out = join(tmp, 'x')
-            execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -Force -LiteralPath '${zip}' -DestinationPath '${out}'`], { windowsHide: true })
-            const entries = readdirSync(out)
-            const base = entries.length === 1 && readdirSync(join(out, entries[0])).length ? join(out, entries[0]) : out
-            for (const name of readdirSync(base)) {
-              cpSync(join(base, name), join(root, name), { recursive: true, force: true })
-            }
+            execFileSync('tar', ['-xzf', tgz, '-C', tmp], { windowsHide: true })
+            const base = join(tmp, 'package')
+            for (const name of readdirSync(base)) cpSync(join(base, name), join(root, name), { recursive: true, force: true })
             rmSync(tmp, { recursive: true, force: true })
-            return json(res, 200, { ok: true, needsRestart: true, version: String(rel.tag_name || '') })
+            return json(res, 200, { ok: true, needsRestart: true, version: String(meta.version || '') })
           } catch (error) {
             return json(res, 200, { ok: false, error: String(error?.message ?? error) })
-          }
-        }
-        if (path === 'update-check') {
-          try {
-            const resp = await fetch('https://git.zr97.top/api/v1/repos/1024/dsh-knowledge-manager/releases/latest', { headers: { accept: 'application/json' } })
-            const data = await resp.json()
-            return json(res, 200, { latest: String(data.tag_name || ''), url: String(data.html_url || ''), name: String(data.name || ''), body: String(data.body || '') })
-          } catch (error) {
-            return json(res, 200, { latest: '', error: String(error?.message ?? error) })
           }
         }
         if (path === 'recent-updated') {
@@ -371,38 +373,6 @@ export function createApiHandler(getStore, options = {}) {
           store.meta.prepare('DELETE FROM kb_attrib').run()
           try { store.meta.prepare('DELETE FROM kb_undo').run() } catch { /* optional */ }
           return json(res, 200, { ok: true, cleared: Number(turns.changes || 0) })
-        }
-        if (path === 'self-update') {
-          const root = dirname(dirname(fileURLToPath(import.meta.url)))
-          try {
-            const rel = await (await fetch('https://git.zr97.top/api/v1/repos/1024/dsh-knowledge-manager/releases/latest', { headers: { accept: 'application/json' } })).json()
-            const asset = (rel.assets || []).find((a) => /\.zip$/i.test(a.name) && a.browser_download_url)
-            if (!asset) return json(res, 200, { ok: false, error: '该 Release 没有附带 zip 包' })
-            const buf = Buffer.from(await (await fetch(asset.browser_download_url)).arrayBuffer())
-            const tmp = mkdtempSync(join(tmpdir(), 'kb-upd-'))
-            const zip = join(tmp, 'pkg.zip')
-            writeFileSync(zip, buf)
-            const out = join(tmp, 'x')
-            execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -Force -LiteralPath '${zip}' -DestinationPath '${out}'`], { windowsHide: true })
-            const entries = readdirSync(out)
-            const base = entries.length === 1 && readdirSync(join(out, entries[0])).length ? join(out, entries[0]) : out
-            for (const name of readdirSync(base)) {
-              cpSync(join(base, name), join(root, name), { recursive: true, force: true })
-            }
-            rmSync(tmp, { recursive: true, force: true })
-            return json(res, 200, { ok: true, needsRestart: true, version: String(rel.tag_name || '') })
-          } catch (error) {
-            return json(res, 200, { ok: false, error: String(error?.message ?? error) })
-          }
-        }
-        if (path === 'update-check') {
-          try {
-            const resp = await fetch('https://git.zr97.top/api/v1/repos/1024/dsh-knowledge-manager/releases/latest', { headers: { accept: 'application/json' } })
-            const data = await resp.json()
-            return json(res, 200, { latest: String(data.tag_name || ''), url: String(data.html_url || ''), name: String(data.name || ''), body: String(data.body || '') })
-          } catch (error) {
-            return json(res, 200, { latest: '', error: String(error?.message ?? error) })
-          }
         }
         if (path === 'recent-updated') {
           const since = q.get('since') || new Date(new Date().setHours(0, 0, 0, 0)).toISOString()

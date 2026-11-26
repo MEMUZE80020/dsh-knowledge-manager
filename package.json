@@ -1,9 +1,9 @@
 {
   "name": "dsh-knowledge-manager",
-  "version": "0.2.51",
+  "version": "0.2.52",
   "private": true,
   "type": "module",
-  "description": "知识管理：本地知识库、外部知识库连接与双向同步",
+  "description": "DSH knowledge manager: SQLite local knowledge base with optional MariaDB/MySQL external libraries.",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
@@ -33,5 +33,22 @@
   },
   "dependencies": {
     "mysql2": "^3.24.6"
-  }
+  },
+  "license": "MIT",
+  "author": "1024",
+  "homepage": "https://space.bilibili.com/41158746",
+  "repository": {
+    "type": "git",
+    "url": "https://space.bilibili.com/41158746"
+  },
+  "bugs": {
+    "url": "https://space.bilibili.com/41158746"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "knowledge-base",
+    "sqlite"
+  ]
 }

@@ -6,7 +6,7 @@ window.__ModuleLoader__.load({
     const { useState, useEffect, useCallback, useRef } = React
 
     const PANEL_ID = 'dsh-knowledge-manager'
-    const KB_VERSION = '0.2.51'
+    const KB_VERSION = '0.3.0.1'
     const API = `${(typeof window !== 'undefined' && window.__KB_API_BASE__) || ''}/kb-api`
 
     let pendingSection = ''
