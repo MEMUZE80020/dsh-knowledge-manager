@@ -1,6 +1,6 @@
 url: https://github.com/OWNER/dsh-knowledge-manager
 name: OWNER/dsh-knowledge-manager
-category: productivity
+category: memory
 description:
   en: Local SQLite knowledge base with optional MariaDB/MySQL libraries, turn-by-turn knowledge cards, sensitivity classification and two-way sync for DeepSeek Harness.
   zh: DSH 本地知识库（SQLite，可选 MariaDB/MySQL 外部库），支持对话轮次知识卡片、敏感分类与双向同步。
