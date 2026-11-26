@@ -6,7 +6,7 @@ window.__ModuleLoader__.load({
     const { useState, useEffect, useCallback, useRef } = React
 
     const PANEL_ID = 'dsh-knowledge-manager'
-    const KB_VERSION = '0.2.49'
+    const KB_VERSION = '0.2.50'
     const API = `${(typeof window !== 'undefined' && window.__KB_API_BASE__) || ''}/kb-api`
 
     let pendingSection = ''
@@ -1638,9 +1638,10 @@ window.__ModuleLoader__.load({
             {
               style: { fontSize: 15, fontWeight: 600, padding: '0 8px 4px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' },
               title: update?.hasNew ? `发现新版本 ${update.latest}，点击查看` : '点击检查更新',
-              onClick: () => {
-                if (update?.hasNew) setUpdateOpen(true)
-                else checkUpdate()
+              onClick: async () => {
+                const fresh = await checkUpdateGlobal(true)
+                if (fresh) setUpdate(fresh)
+                if (fresh?.hasNew) setUpdateOpen(true)
               },
             },
             h('span', null, `知识管理 v${KB_VERSION}`),
