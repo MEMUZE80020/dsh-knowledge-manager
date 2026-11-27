@@ -6,7 +6,7 @@ window.__ModuleLoader__.load({
     const { useState, useEffect, useCallback, useRef } = React
 
     const PANEL_ID = 'dsh-knowledge-manager'
-    const KB_VERSION = '0.3.1'
+    const KB_VERSION = '0.3.2'
     const API = `${(typeof window !== 'undefined' && window.__KB_API_BASE__) || ''}/kb-api`
 
     let pendingSection = ''
@@ -861,6 +861,7 @@ window.__ModuleLoader__.load({
     }
 
     const SETTINGS_DEFAULTS = {
+      cloudAccess: false,
       syncIntervalSec: 60,
       startupBackup: true,
       backupRetentionDays: 30,
@@ -880,6 +881,7 @@ window.__ModuleLoader__.load({
       }, [])
       const set = (k, fallback) => (e) => setForm({ ...form, [k]: e.target.type === 'checkbox' ? e.target.checked : Number(e.target.value) || e.target.value || fallback })
       const [clearOpen, setClearOpen] = useState(false)
+      const [riskOpen, setRiskOpen] = useState(false)
       const [clearMsg, setClearMsg] = useState('')
       const save = async () => {
         const res = await post('settings', { settings: form })
@@ -888,6 +890,7 @@ window.__ModuleLoader__.load({
       }
       if (!form) return h(Section, { title: '设置' }, h(Empty, { text: '加载中…' }))
       const tips = {
+        cloudAccess: '默认关闭：敏感知识不进入模型上下文；开启后云端 AI 可读取敏感条目',
         syncIntervalSec: '后台轮询云端的间隔，最小 30 秒，重启后生效',
         startupBackup: 'DSH 启动时对每个库做一次备份',
         backupRetentionDays: '超过天数的备份在下次清理时删除',
@@ -908,6 +911,7 @@ window.__ModuleLoader__.load({
         ['attachmentMaxTotalMB', '附件单库上限（MB，0 = 不限）', 'number'],
         ['injectMaxEntries', '注入每轮最多条数', 'number'],
         ['injectMaxChars', '注入每轮最多字数', 'number'],
+        ['cloudAccess', '允许云端 AI 读取敏感知识（默认关闭）', 'cloud-check'],
       ]
       return h(
         Section,
@@ -922,6 +926,15 @@ window.__ModuleLoader__.load({
               h('div', { title: tips[key] || '', style: { cursor: 'help', borderBottom: '1px dotted color-mix(in srgb, currentColor 35%, transparent)', width: 'fit-content' } }, label),
               type === 'checkbox'
                 ? h('input', { type: 'checkbox', checked: Boolean(form[key]), onChange: (e) => setForm({ ...form, [key]: e.target.checked }) })
+                : type === 'cloud-check'
+                  ? h('input', {
+                      type: 'checkbox',
+                      checked: Boolean(form.cloudAccess),
+                      onChange: (e) => {
+                        if (e.target.checked) setRiskOpen(true)
+                        else setForm({ ...form, cloudAccess: false })
+                      },
+                    })
                 : type === 'textarea'
                   ? h('textarea', { value: form[key] ?? '', onChange: (e) => setForm({ ...form, [key]: e.target.value }), rows: 3, style: { ...input, width: '100%', minHeight: 64, resize: 'vertical', fontFamily: 'inherit' } })
                   : h('input', {
@@ -940,6 +953,18 @@ window.__ModuleLoader__.load({
             h('button', { style: { ...btn, background: '#c0392b', borderColor: '#c0392b', color: '#fff' }, onClick: () => setClearOpen(true) }, '清除全部数据'),
           ),
         ),
+        h(ConfirmDialog, {
+          open: riskOpen,
+          title: '允许云端 AI 读取敏感知识？',
+          desc: '云端 AI 需要读取数据后才能为你总结，这会导致敏感数据发送到模型服务商，可能导致泄露；也不排除云端 AI 会以此作为训练语料。确认开启后，kb_search 将把敏感条目返回给模型。取消可随时点击。',
+          seconds: 10,
+          confirmLabel: '确认开启',
+          onClose: () => setRiskOpen(false),
+          onConfirm: () => {
+            setRiskOpen(false)
+            setForm({ ...form, cloudAccess: true })
+          },
+        }),
         h(ConfirmDialog, {
           open: clearOpen,
           title: '清除全部数据',
