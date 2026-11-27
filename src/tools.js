@@ -117,11 +117,18 @@ export function registerKnowledgeTools(ctx, getStore) {
         },
         async execute(args) {
           const s = await store()
+          const allowCloud = s.getSetting('cloudAccess', false) === true
           const libs = args.library ? [args.library] : s.listLibraries().map((l) => l.name)
           const groups = []
+          let hiddenSensitive = 0
           for (const lib of libs) {
             try {
-              const hits = s.search(lib, { ...args, q: args.query })
+              let hits = s.search(lib, { ...args, q: args.query })
+              if (!allowCloud) {
+                const before = hits.length
+                hits = hits.filter((hit) => hit.sensitivity !== 'sensitive')
+                hiddenSensitive += before - hits.length
+              }
               if (hits.length) {
                 groups.push({ library: lib, hits })
                 const at = Date.now()
@@ -131,7 +138,9 @@ export function registerKnowledgeTools(ctx, getStore) {
               // an unopened or removed library must not fail the whole search
             }
           }
-          return { query: args.query, groups }
+          return hiddenSensitive
+            ? { query: args.query, groups, hiddenSensitive, note: `有 ${hiddenSensitive} 条敏感知识因「云端访问」关闭而未返回` }
+            : { query: args.query, groups }
         },
       }),
     ),
